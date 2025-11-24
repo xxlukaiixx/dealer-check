@@ -114,10 +114,24 @@ async function searchCep(cep) {
     }
 }
 
-async function getCityPopulation(city, uf) {
-    // Mocking population for demo
-    const basePop = (city.length * 1234) + (uf.length * 5678);
-    return basePop > 500000 ? basePop : basePop * 10;
+async function getCityPopulation(ibgeId) {
+    try {
+        // IBGE API: Agregado 6579 (Estimativa de População), Variável 9324, Último Período (-1), Nível Município (N6)
+        const response = await fetch(`https://servicodados.ibge.gov.br/api/v3/agregados/6579/periodos/-1/variaveis/9324?localidades=N6[${ibgeId}]`);
+        const data = await response.json();
+
+        // Parse response: data[0].resultados[0].series[0].serie[YEAR]
+        const serie = data[0]?.resultados[0]?.series[0]?.serie;
+        if (serie) {
+            const populationStr = Object.values(serie)[0];
+            return parseInt(populationStr);
+        }
+        throw new Error('Estrutura de dados inesperada do IBGE');
+    } catch (error) {
+        console.error('Erro ao consultar IBGE:', error);
+        showToast('Erro ao obter população real. Usando estimativa.', 'warning');
+        return 50000; // Fallback seguro
+    }
 }
 
 // --- Logic ---
@@ -401,7 +415,16 @@ function setupEventListeners() {
         if (!state.selectedLocation) return;
 
         const currentDealers = parseInt(elements.inputs.dealers.value) || 0;
-        const population = await getCityPopulation(state.selectedLocation.city, state.selectedLocation.uf);
+
+        // Show loading state
+        elements.buttons.check.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
+        elements.buttons.check.disabled = true;
+
+        const population = await getCityPopulation(state.selectedLocation.ibgeId);
+
+        // Restore button
+        elements.buttons.check.innerHTML = 'Verificar Disponibilidade <i class="fa-solid fa-arrow-right"></i>';
+        elements.buttons.check.disabled = false;
 
         const result = checkAvailability(population, currentDealers);
         showResult(result, population);
