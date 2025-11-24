@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificador de Praça - Revendedores</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-gradient"></div>
+
+    <header class="glass-header">
+        <div class="logo">
+            <i class="fa-solid fa-chart-network"></i>
+            <span>DealerCheck</span>
+        </div>
+        <button id="admin-toggle" class="icon-btn" title="Acesso Admin">
+            <i class="fa-solid fa-lock"></i>
+        </button>
+    </header>
+
+    <main class="container">
+        <!-- USER VIEW -->
+        <section id="user-view" class="view active">
+            <div class="hero-text">
+                <h1>Análise de <span class="gradient-text">Disponibilidade</span></h1>
+                <p>Verifique instantaneamente se sua cidade comporta novos revendedores.</p>
+            </div>
+
+            <div class="glass-card search-card">
+                <div class="input-group">
+                    <label for="cep-input">CEP da Cidade</label>
+                    <div class="cep-wrapper">
+                        <input type="text" id="cep-input" placeholder="00000-000" maxlength="9">
+                        <button id="search-cep-btn" class="icon-btn-search"><i class="fa-solid fa-search"></i></button>
+                    </div>
+                </div>
+
+                <div class="location-display hidden" id="location-display">
+                    <i class="fa-solid fa-location-dot"></i> <span id="location-text">...</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="current-dealers">Revendedores Atuais</label>
+                    <input type="number" id="current-dealers" min="0" placeholder="Ex: 2">
+                </div>
+
+                <button id="check-btn" class="cta-btn" disabled>
+                    Verificar Disponibilidade <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <div id="result-container" class="result-container hidden">
+                <!-- Results injected here -->
+            </div>
+        </section>
+
+        <!-- ADMIN VIEW -->
+        <section id="admin-view" class="view hidden">
+            <div class="glass-card login-card" id="login-panel">
+                <h2>Acesso Administrativo</h2>
+                <input type="password" id="admin-pass" placeholder="Senha de Acesso">
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Verificador de Praça - Revendedores</title>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap"
+                        rel="stylesheet">
+                    <link rel="stylesheet" href="style.css">
+                    <link rel="stylesheet"
+                        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                </head>
+
+                <body>
+                    <div class="background-gradient"></div>
+
+                    <header class="glass-header">
+                        <div class="logo">
+                            <i class="fa-solid fa-chart-network"></i>
+                            <span>DealerCheck</span>
+                        </div>
+                        <button id="admin-toggle" class="icon-btn" title="Acesso Admin">
+                            <i class="fa-solid fa-lock"></i>
+                        </button>
+                    </header>
+
+                    <main class="container">
+                        <!-- USER VIEW -->
+                        <section id="user-view" class="view active">
+                            <div class="hero-text">
+                                <h1>Análise de <span class="gradient-text">Disponibilidade</span></h1>
+                                <p>Verifique instantaneamente se sua cidade comporta novos revendedores.</p>
+                            </div>
+
+                            <div class="glass-card search-card">
+                                <div class="input-group">
+                                    <label for="cep-input">CEP da Cidade</label>
+                                    <div class="cep-wrapper">
+                                        <input type="text" id="cep-input" placeholder="00000-000" maxlength="9">
+                                        <button id="search-cep-btn" class="icon-btn-search"><i
+                                                class="fa-solid fa-search"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="location-display hidden" id="location-display">
+                                    <i class="fa-solid fa-location-dot"></i> <span id="location-text">...</span>
+                                </div>
+
+                                <div class="input-group">
+                                    <label for="current-dealers">Revendedores Atuais</label>
+                                    <input type="number" id="current-dealers" min="0" placeholder="Ex: 2">
+                                </div>
+
+                                <button id="check-btn" class="cta-btn" disabled>
+                                    Verificar Disponibilidade <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
+
+                            <div id="result-container" class="result-container hidden">
+                                <!-- Results injected here -->
+                            </div>
+                        </section>
+
+                        <!-- ADMIN VIEW -->
+                        <section id="admin-view" class="view hidden">
+                            <input type="text" id="exclusive-cep-input" placeholder="00000-000" maxlength="9">
+                            <button id="add-exclusive-cep" class="small-btn">Adicionar</button>
+            </div>
+            <ul id="exclusive-list" class="exclusive-list">
+                <!-- List items -->
+            </ul>
+            </div>
+
+            <div class="glass-card config-card">
+                <h3><i class="fa-solid fa-bell"></i> Alertas</h3>
+                <p>Avisar vencimento com antecedência de:</p>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <input type="number" id="warning-days" value="30">
+                    <label class="small-label">Dias</label>
+                </div>
+                <button id="save-warning" class="small-btn">Salvar Configuração</button>
+            </div>
+            </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- TUTORIAL MODAL -->
+    <div id="tutorial-modal" class="modal-overlay hidden">
+        <div class="glass-card modal-content">
+            <h2>Bem-vindo ao DealerCheck! 🚀</h2>
+            <p>Este sistema ajuda você a verificar a disponibilidade de praças para novos revendedores.
+            </p>
+
+            <div class="tutorial-steps">
+                <div class="step">
+                    <div class="step-icon"><i class="fa-solid fa-search"></i></div>
+                    <p><strong>1. Digite o CEP</strong><br>O sistema localiza a cidade automaticamente.
+                    </p>
+                </div>
+                <div class="step">
+                    <div class="step-icon"><i class="fa-solid fa-users"></i></div>
+                    <p><strong>2. Informe Revendedores</strong><br>Quantos já atuam na região?</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon"><i class="fa-solid fa-check-circle"></i></div>
+                    <p><strong>3. Veja o Resultado</strong><br>Saiba na hora se está Disponível ou
+                        Indisponível.</p>
+                </div>
+            </div>
+
+            <button id="close-tutorial" class="cta-btn">Entendi, vamos começar!</button>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

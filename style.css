@@ -1,0 +1,542 @@
+:root {
+    --primary: #00f2ff;
+    --secondary: #0066ff;
+    --accent: #7000ff;
+    --success: #00ff88;
+    --warning: #ffcc00;
+    --danger: #ff3366;
+    --dark-bg: #0a0a12;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-main: #ffffff;
+    --text-muted: #a0a0b0;
+    --font-main: 'Outfit', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--dark-bg);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Background Animation */
+.background-gradient {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at 10% 20%, rgba(112, 0, 255, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 242, 255, 0.15) 0%, transparent 40%);
+    z-index: -1;
+}
+
+/* Header */
+.glass-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: rgba(10, 10, 18, 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--glass-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Layout */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.view {
+    width: 100%;
+    max-width: 600px;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.view.hidden {
+    display: none;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.view.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    animation: fadeIn 0.5s ease forwards;
+}
+
+/* Typography */
+h1 {
+    font-size: 3rem;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.gradient-text {
+    background: linear-gradient(to right, var(--primary), var(--success));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-text p {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    margin-bottom: 3rem;
+}
+
+/* Glass Cards */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Inputs */
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.small-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    margin-bottom: 0.2rem;
+    display: block;
+}
+
+select,
+input {
+    width: 100%;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: var(--text-main);
+    font-family: var(--font-main);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+select:focus,
+input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0, 242, 255, 0.1);
+}
+
+select:disabled,
+input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* CEP Input Specifics */
+.cep-wrapper {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.icon-btn-search {
+    background: var(--primary);
+    border: none;
+    border-radius: 12px;
+    width: 50px;
+    color: #000;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.icon-btn-search:hover {
+    transform: scale(1.05);
+}
+
+.location-display {
+    background: rgba(0, 242, 255, 0.1);
+    border: 1px solid var(--primary);
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary);
+    font-weight: 600;
+    animation: fadeIn 0.3s ease;
+}
+
+.location-display.hidden {
+    display: none;
+}
+
+/* Admin Specifics */
+.exclusive-inputs {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 0.5rem;
+}
+
+.full-width-btn {
+    width: 100%;
+    padding: 0.8rem;
+    background: var(--secondary);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    margin-top: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.full-width-btn:hover {
+    background: var(--accent);
+}
+
+/* Alert Dashboard */
+.alert-dashboard {
+    margin-bottom: 2rem;
+    border-color: var(--warning);
+    background: rgba(255, 204, 0, 0.05);
+}
+
+.alert-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.alert-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--warning);
+    padding: 1rem;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.alert-days {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--warning);
+}
+
+.renew-btn {
+    background: var(--warning);
+    color: #000;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: transform 0.2s;
+}
+
+.renew-btn:hover {
+    transform: scale(1.05);
+}
+
+/* Buttons */
+.cta-btn {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--secondary), var(--accent));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cta-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(112, 0, 255, 0.3);
+}
+
+.cta-btn:disabled {
+    background: #333;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.icon-btn:hover {
+    color: var(--primary);
+}
+
+.small-btn {
+    padding: 0.5rem 1rem;
+    background: var(--primary);
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+.outline-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.outline-btn:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+/* Results */
+.result-card {
+    margin-top: 2rem;
+    text-align: center;
+    animation: slideUp 0.5s ease;
+}
+
+.status-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.status-available {
+    color: var(--success);
+}
+
+.status-unavailable {
+    color: var(--danger);
+}
+
+.status-limited {
+    color: var(--warning);
+}
+
+.result-title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.result-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    text-align: left;
+}
+
+.detail-item {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+    border-radius: 12px;
+}
+
+.detail-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: block;
+}
+
+.detail-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+/* Admin Panel */
+.config-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.exclusive-list {
+    list-style: none;
+    margin-top: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.exclusive-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.exclusive-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.exclusive-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.remove-btn {
+    color: var(--danger);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    border: 1px solid var(--primary);
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
+}
+
+.modal-content h2 {
+    margin-bottom: 1rem;
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.tutorial-steps {
+    margin: 2rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 12px;
+}
+
+.step-icon {
+    font-size: 1.5rem;
+    color: var(--primary);
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2.2rem;
+    }
+
+    .container {
+        padding: 1rem;
+    }
+
+    .glass-card {
+        padding: 1.5rem;
+    }
+}
