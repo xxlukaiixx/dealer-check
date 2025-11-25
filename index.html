@@ -24,6 +24,29 @@
 <body>
     <div class="background-texture"></div>
 
+    <!-- Debug Console (Visible on Error) -->
+    <div id="debug-console"
+        style="display:none; position:fixed; bottom:0; left:0; width:100%; height:150px; background:rgba(0,0,0,0.9); color:#ff4444; font-family:monospace; padding:10px; overflow:auto; z-index:9999; border-top:2px solid #ff0000;">
+        <strong>DEBUG CONSOLE:</strong><br>
+    </div>
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            const console = document.getElementById('debug-console');
+            if (console) {
+                console.style.display = 'block';
+                console.innerHTML += `[ERROR] ${msg} <br> File: ${url}:${line}:${col} <br> ${error ? error.stack : ''}<br><hr>`;
+            }
+            return false;
+        };
+        window.addEventListener('unhandledrejection', function (event) {
+            const console = document.getElementById('debug-console');
+            if (console) {
+                console.style.display = 'block';
+                console.innerHTML += `[PROMISE ERROR] ${event.reason} <br><hr>`;
+            }
+        });
+    </script>
+
     <header class="glass-header">
         <div class="logo" onclick="window.location.reload()" style="cursor: pointer;">
             <img src="assets/logo.png" alt="EAG Clothing Logo" class="logo-img">
