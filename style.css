@@ -47,6 +47,39 @@ body {
     z-index: -1;
 }
 
+/* Header & Logo */
+.glass-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.logo-img {
+    height: auto;
+    max-width: 180px;
+    /* Desktop size */
+    transition: all 0.3s ease;
+}
+
+/* Mobile Responsiveness for Logo */
+@media (max-width: 768px) {
+    .logo-img {
+        max-width: 120px;
+        /* Mobile size */
+    }
+
+    .glass-header {
+        padding: 0.8rem 1.2rem;
+    }
+}
+
 .view {
     width: 100%;
     transition: opacity 0.3s ease;
@@ -145,6 +178,36 @@ select:focus {
     background: #ccc;
 }
 
+/* Autocomplete */
+.autocomplete-items {
+    position: absolute;
+    border: 1px solid var(--border-color);
+    border-top: none;
+    z-index: 99;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--card-bg);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.autocomplete-item {
+    padding: 10px;
+    cursor: pointer;
+    background-color: var(--card-bg);
+    border-bottom: 1px solid #333;
+    color: #fff;
+}
+
+.autocomplete-item:hover {
+    background-color: #222;
+}
+
+.autocomplete-item strong {
+    color: var(--text-main);
+}
+
 /* Buttons */
 .cta-btn {
     width: 100%;
@@ -227,204 +290,7 @@ select:focus {
 
 .result-title {
     font-size: 2.5rem;
-
-    .status-available-card {
-        border-color: var(--text-main);
-    }
-
-    .status-unavailable-card {
-        border-color: #333;
-        color: #888;
-    }
-
-    .status-unavailable-card .result-title {
-        color: #555;
-        text-decoration: line-through;
-    }
-
-    .cta-btn-result {
-        display: inline-block;
-        padding: 1rem 2rem;
-        background: var(--text-main);
-        color: var(--bg-color);
-        text-decoration: none;
-        font-weight: 800;
-        text-transform: uppercase;
-    }
-
-    /* Admin Lists */
-    .occupied-inputs {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr;
-        gap: 1px;
-        background: var(--border-color);
-        border: 1px solid var(--border-color);
-    }
-
-    .occupied-inputs input,
-    .occupied-inputs select {
-        background: var(--card-bg);
-    }
-
-    .occupied-list {
-        list-style: none;
-        margin-top: 2rem;
-    }
-
-    .occupied-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .occupied-info strong {
-        display: block;
-        font-size: 1.1rem;
-    }
-
-    .occupied-info span {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-    }
-
-    .remove-btn {
-        background: transparent;
-        border: none;
-        color: #555;
-        cursor: pointer;
-        transition: color 0.3s;
-    }
-
-    .remove-btn:hover {
-        color: #fff;
-    }
-
-    /* Modal */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.95);
-        z-index: 1000;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 1rem;
-    }
-
-    .modal-content {
-        max-width: 400px;
-        width: 100%;
-        text-align: center;
-        border: 2px solid var(--text-main);
-    }
-
-    .tutorial-steps {
-        margin: 2rem 0;
-        text-align: left;
-    }
-
-    .step {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .step-icon {
-        font-size: 1.5rem;
-        width: 40px;
-        text-align: center;
-    }
-
-    /* Toast */
-    .toast {
-        position: fixed;
-        bottom: 2rem;
-        right: 2rem;
-        background: var(--text-main);
-        color: var(--bg-color);
-        padding: 1rem 2rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        z-index: 2000;
-        animation: slideUp 0.3s ease;
-    }
-
-    .toast-error {
-        background: #333;
-        color: #fff;
-        border: 1px solid #fff;
-    }
-
-    @keyframes slideUp {
-        from {
-            transform: translateY(20px);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-
-        to {
-            opacity: 1;
-        }
-    }
-
-    /* Mobile */
 }
-
-.small-btn:hover {
-    background: var(--text-main);
-    color: var(--bg-color);
-}
-
-.full-width-btn {
-    width: 100%;
-    padding: 1rem;
-    background: var(--text-main);
-    color: var(--bg-color);
-    border: none;
-    font-weight: 800;
-    cursor: pointer;
-    text-transform: uppercase;
-    margin-top: 1rem;
-}
-
-/* Results */
-.result-container {
-    margin-top: 2rem;
-    animation: slideUp 0.5s ease;
-}
-
-.result-card {
-    text-align: center;
-    border: 2px solid var(--text-main);
-}
-
-.status-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-}
-
-.result-title {
-    font-size: 2.5rem;
-}
-
-/* This brace was missing and is added to close .result-title */
 
 .status-available-card {
     border-color: var(--text-main);
