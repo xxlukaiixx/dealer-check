@@ -8,7 +8,8 @@ const state = {
         warningDays: 30 // Keep for future use if needed
     },
     selectedLocation: null, // { city, uf, ibgeId, population }
-    allCities: [] // Cache for IBGE cities list
+    allCities: [], // Cache for IBGE cities list
+    mapChart: null // Highcharts instance
 };
 
 // DOM Elements
@@ -50,7 +51,100 @@ async function init() {
     checkTutorial();
     populateUfSelect();
     setupEventListeners();
+    initMap(); // Initialize Map
     await loadAllCities(); // Pre-load cities for name search
+}
+
+// --- Map Logic ---
+function initMap() {
+    // Aggregate data by UF
+    const data = getMapData();
+
+    state.mapChart = Highcharts.mapChart('map-container', {
+        chart: {
+            map: 'countries/br/br-all',
+            backgroundColor: 'transparent',
+            style: {
+                fontFamily: 'Montserrat'
+            }
+        },
+        title: {
+            text: '',
+            style: { color: '#fff' }
+        },
+        mapNavigation: {
+            enabled: true,
+            buttonOptions: {
+                verticalAlign: 'bottom'
+            }
+        },
+        colorAxis: {
+            min: 0,
+            minColor: '#333',
+            maxColor: '#fff',
+            labels: {
+                style: { color: '#888' }
+            }
+        },
+        series: [{
+            data: data,
+            name: 'Revendedores',
+            states: {
+                hover: {
+                    color: '#fff'
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                format: '{point.name}',
+                style: {
+                    color: '#ccc',
+                    textOutline: 'none',
+                    fontWeight: 'normal'
+                }
+            },
+            tooltip: {
+                pointFormat: '{point.name}: {point.value} Revendedores'
+            },
+            borderColor: '#333',
+            borderWidth: 1
+        }]
+    });
+}
+
+function getMapData() {
+    // Map UF to Highcharts keys (br-sp, br-rj, etc.)
+    // Highcharts uses 'hc-key' like 'br-sp'
+    const counts = {};
+
+    state.config.occupiedCities.forEach(item => {
+        const uf = item.uf.toLowerCase();
+        const key = `br-${uf}`;
+        const dealers = parseInt(item.dealers) || 0;
+
+        if (!counts[key]) counts[key] = 0;
+        counts[key] += dealers;
+    });
+
+    // Convert to array format for Highcharts
+    // We need to match against all BR states to ensure they appear even with 0
+    const allKeys = [
+        'br-ac', 'br-al', 'br-ap', 'br-am', 'br-ba', 'br-ce', 'br-df', 'br-es', 'br-go', 'br-ma',
+        'br-mt', 'br-ms', 'br-mg', 'br-pa', 'br-pb', 'br-pr', 'br-pe', 'br-pi', 'br-rj', 'br-rn',
+        'br-rs', 'br-ro', 'br-rr', 'br-sc', 'br-sp', 'br-se', 'br-to'
+    ];
+
+    return allKeys.map(key => ({
+        'hc-key': key,
+        value: counts[key] || 0
+    }));
+}
+
+function updateMapData() {
+    if (state.mapChart) {
+        const newData = getMapData();
+        state.mapChart.series[0].setData(newData);
+    }
 }
 
 // --- Data Loading ---
@@ -179,6 +273,16 @@ async function processLocationSelection(city, uf, ibgeId) {
 
     // 2. Check Availability
     checkAvailability();
+
+    // 3. Update Map Highlight
+    if (state.mapChart) {
+        const key = `br-${uf.toLowerCase()}`;
+        const point = state.mapChart.series[0].points.find(p => p['hc-key'] === key);
+        if (point) {
+            point.zoomTo();
+            point.select(true, false); // Select, don't accumulate
+        }
+    }
 }
 
 async function getCityPopulation(ibgeId) {
@@ -207,44 +311,6 @@ function checkAvailability() {
 
     // 2. Calculate Max Dealers
     const maxDealers = Math.floor(population / state.config.densityRule);
-
-    // 3. Determine Status
-    // If current dealers < max dealers -> Available
-    // Else -> Unavailable
-    const isAvailable = currentDealers < maxDealers;
-
-    showResult(isAvailable, city, uf);
-}
-
-// --- UI Functions ---
-function showResult(isAvailable, city, uf) {
-    const container = elements.containers.result;
-    container.classList.remove('hidden');
-
-    let html = '';
-
-    if (isAvailable) {
-        html = `
-            <div class="glass-card result-card status-available-card">
-                <div class="status-icon"><i class="fa-solid fa-check"></i></div>
-                <h2 class="result-title">DISPONÍVEL</h2>
-                <p class="result-city">${city} - ${uf}</p>
-                <p class="result-desc">Esta praça está aberta para novos parceiros.</p>
-                <a href="#" class="cta-btn-result">Quero ser um Revendedor</a>
-            </div>
-        `;
-    } else {
-        html = `
-            <div class="glass-card result-card status-unavailable-card">
-                <div class="status-icon"><i class="fa-solid fa-xmark"></i></div>
-                <h2 class="result-title">INDISPONÍVEL</h2>
-                <p class="result-city">${city} - ${uf}</p>
-                <p class="result-desc">Esta praça já atingiu o limite de parceiros.</p>
-            </div>
-        `;
-    }
-
-    container.innerHTML = html;
 }
 
 function showToast(message, type = 'info') {
@@ -279,6 +345,7 @@ function loadConfig() {
 function saveConfig() {
     localStorage.setItem('dealerCheckConfigV2', JSON.stringify(state.config));
     showToast('Configurações salvas!', 'success');
+    updateMapData(); // Refresh map
 }
 
 function renderOccupiedList() {

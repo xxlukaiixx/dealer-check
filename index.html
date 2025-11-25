@@ -4,107 +4,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EAG Clothing - Análise de Praça</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <!-- Cache Buster added to force update -->
-    <link rel="stylesheet" href="style.css?v=4">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
+    </div>
+    </div>
+    </div>
 
-<body>
-    <div class="background-texture"></div>
+    <div id="result-container" class="result-container hidden">
+        <!-- Results injected here -->
+    </div>
+    </section>
+    <h2>ADMINISTRAÇÃO</h2>
+    <button id="logout-btn" class="outline-btn">SAIR</button>
+    </div>
 
-    <header class="glass-header">
-        <div class="logo">
-            <i class="fa-solid fa-eagle"></i> <!-- Placeholder for Eagle Icon -->
-            <div class="logo-text">
-                <span>EAG</span>
-                <span class="logo-sub">CLOTHING</span>
+    <div class="config-grid">
+        <div>
+            <h3>REGRA DE DENSIDADE</h3>
+            <p>Habitantes por revendedor:</p>
+            <div class="input-group">
+                <input type="number" id="density-rule" value="5000">
             </div>
+            <button id="save-density" class="small-btn">SALVAR REGRA</button>
         </div>
-        <button id="admin-toggle" class="icon-btn" title="Acesso Admin">
-            <i class="fa-solid fa-lock"></i>
-        </button>
-    </header>
+    </div>
+    </div>
 
-    <main class="container">
-        <!-- USER VIEW -->
-        <section id="user-view" class="view active">
-            <div class="hero-text">
-                <h1>VERIFICADOR DE <span class="highlight-text">PRAÇA</span></h1>
-                <p>Consulte a disponibilidade para novos revendedores.</p>
-            </div>
+    <div class="glass-card config-card">
+        <h3>PRAÇAS OCUPADAS</h3>
+        <p>Registre quantos revendedores já existem em cada cidade.</p>
 
-            <div class="glass-card search-card">
-                <div class="input-group">
-                    <label for="search-input">CIDADE OU CEP</label>
-                    <div class="search-wrapper">
-                        <input type="text" id="search-input" placeholder="Ex: São Paulo ou 01000-000">
-                        <button id="search-btn" class="icon-btn-search"><i class="fa-solid fa-search"></i></button>
-                    </div>
-                </div>
-            </div>
+        <div class="occupied-inputs">
+            <input type="text" id="occupied-city-input" placeholder="Cidade (ex: São Paulo)">
+            <select id="occupied-uf-input">
+                <option value="" disabled selected>UF</option>
+                <!-- Populated by JS -->
+            </select>
+            <input type="number" id="occupied-dealers-input" placeholder="Qtd. Revendedores" min="1">
+        </div>
 
-            <div id="result-container" class="result-container hidden">
-                <!-- Results injected here -->
-            </div>
-        </section>
+        <button id="add-occupied-btn" class="full-width-btn">ATUALIZAR PRAÇA</button>
 
-        <!-- ADMIN VIEW -->
-        <section id="admin-view" class="view hidden">
-            <!-- Login Panel -->
-            <div class="glass-card login-card" id="login-panel">
-                <h2>ACESSO RESTRITO</h2>
-                <div class="input-group">
-                    <input type="password" id="admin-pass" placeholder="Senha">
-                </div>
-                <button id="login-btn" class="cta-btn">ENTRAR</button>
-            </div>
-
-            <!-- Admin Panel (Hidden by default) -->
-            <div id="admin-panel" class="hidden">
-                <div class="glass-card config-card" style="margin-bottom: 2rem;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h2>ADMINISTRAÇÃO</h2>
-                        <button id="logout-btn" class="outline-btn">SAIR</button>
-                    </div>
-
-                    <div class="config-grid">
-                        <div>
-                            <h3>REGRA DE DENSIDADE</h3>
-                            <p>Habitantes por revendedor:</p>
-                            <div class="input-group">
-                                <input type="number" id="density-rule" value="5000">
-                            </div>
-                            <button id="save-density" class="small-btn">SALVAR REGRA</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-card config-card">
-                    <h3>PRAÇAS OCUPADAS</h3>
-                    <p>Registre quantos revendedores já existem em cada cidade.</p>
-
-                    <div class="occupied-inputs">
-                        <input type="text" id="occupied-city-input" placeholder="Cidade (ex: São Paulo)">
-                        <select id="occupied-uf-input">
-                            <option value="" disabled selected>UF</option>
-                            <!-- Populated by JS -->
-                        </select>
-                        <input type="number" id="occupied-dealers-input" placeholder="Qtd. Revendedores" min="1">
-                    </div>
-
-                    <button id="add-occupied-btn" class="full-width-btn">ATUALIZAR PRAÇA</button>
-
-                    <ul id="occupied-list" class="occupied-list">
-                        <!-- List items injected here -->
-                    </ul>
-                </div>
-            </div>
-        </section>
+        <ul id="occupied-list" class="occupied-list">
+            <!-- List items injected here -->
+        </ul>
+    </div>
+    </div>
+    </section>
     </main>
 
     <!-- TUTORIAL MODAL -->
@@ -130,6 +74,6 @@
 
     <!-- Cache Buster added to force update -->
     <script src="app.js?v=4"></script>
-</body>
+    </body>
 
 </html>
