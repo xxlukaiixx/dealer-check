@@ -4,7 +4,7 @@ const state = {
     isAdmin: false,
     config: {
         densityRule: 5000, // 1 dealer per 5000 inhabitants
-        occupiedCities: [], // Array of objects: { city, uf, dealers }
+        occupiedCities: [], // Array of objects: { city, uf, dealers, lat, lon }
         warningDays: 30 // Keep for future use if needed
     },
     selectedLocation: null, // { city, uf, ibgeId, population }
@@ -69,40 +69,24 @@ function initMap() {
         },
         title: { text: '' },
         mapNavigation: {
-            enabled: true,
-            buttonOptions: {
-                verticalAlign: 'bottom',
-                align: 'right'
-            }
+            enabled: false // Zoom disabled as requested
         },
         colorAxis: {
             min: 0,
-            minColor: '#1a2a3a', // Dark Blue
-            maxColor: '#00a8ff', // Bright Blue (EAG Style)
-            stops: [
-                [0, '#1a2a3a'],
-                [0.5, '#0077cc'],
-                [1, '#00a8ff']
-            ],
+            minColor: '#2c2c2c', // Dark Grey
+            maxColor: '#f0f0f0', // White
             labels: { style: { color: '#888' } }
         },
         plotOptions: {
             map: {
                 allAreas: true,
-                borderColor: '#004466',
+                borderColor: '#444',
                 borderWidth: 1,
                 states: {
                     hover: {
-                        color: '#4dc3ff',
-                        borderColor: '#fff'
+                        color: '#fff',
+                        borderColor: '#000'
                     }
-                },
-                shadow: {
-                    color: 'rgba(0,0,0,0.5)',
-                    offsetX: 2,
-                    offsetY: 2,
-                    opacity: 1,
-                    width: 5
                 }
             }
         },
@@ -113,7 +97,7 @@ function initMap() {
                 enabled: true,
                 format: '{point.name}',
                 style: {
-                    color: '#cceeff',
+                    color: '#888',
                     textOutline: 'none',
                     fontWeight: 'normal',
                     fontSize: '10px'
@@ -127,17 +111,23 @@ function initMap() {
             // City Markers Series (Bubbles)
             type: 'mappoint',
             name: 'Cidades em Destaque',
-            color: '#ffffff',
+            color: '#000', // Black dots
             data: [], // Populated dynamically
             marker: {
-                lineWidth: 2,
-                lineColor: '#00a8ff',
-                fillColor: 'rgba(255,255,255,0.9)',
+                lineWidth: 1,
+                lineColor: '#fff',
+                fillColor: '#000',
                 symbol: 'circle',
-                radius: 5
+                radius: 6
             },
             dataLabels: {
-                enabled: false
+                enabled: true,
+                format: '{point.name}',
+                style: {
+                    color: '#000',
+                    textOutline: '2px contrast'
+                },
+                y: -10
             },
             tooltip: {
                 pointFormat: '<b>{point.name}</b><br>{point.dealers} Revendedores'
@@ -154,11 +144,8 @@ async function updateMapMarkers() {
 
     const markers = [];
 
-    // Process each occupied city to find coordinates
-    // Note: In a real prod app, we should cache these coords to avoid API rate limits
     for (const item of state.config.occupiedCities) {
         try {
-            // Simple cache check (in-memory for session)
             if (!item.lat || !item.lon) {
                 const query = `${item.city}, ${item.uf}, Brazil`;
                 const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
@@ -175,7 +162,7 @@ async function updateMapMarkers() {
                     lat: item.lat,
                     lon: item.lon,
                     dealers: parseInt(item.dealers),
-                    z: parseInt(item.dealers) // For bubble size if we switch type
+                    z: parseInt(item.dealers)
                 });
             }
         } catch (e) {
@@ -183,7 +170,6 @@ async function updateMapMarkers() {
         }
     }
 
-    // Update the second series (index 1)
     if (state.mapChart.series[1]) {
         state.mapChart.series[1].setData(markers);
     }
@@ -215,25 +201,89 @@ function updateMapData() {
     if (state.mapChart) {
         const newData = getMapData();
         state.mapChart.series[0].setData(newData);
-        updateMapMarkers(); // Also update markers
+        updateMapMarkers();
     }
 }
 
-// --- Data Loading ---
+// --- Data Loading with Retry ---
 async function loadAllCities() {
-    try {
-        const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios');
-        const data = await response.json();
-        state.allCities = data.map(city => ({
-            name: city.nome,
-            uf: city.microrregiao.mesorregiao.UF.sigla,
-            id: city.id
-        }));
-        console.log(`Carregadas ${state.allCities.length} cidades.`);
-    } catch (error) {
-        console.error('Erro ao carregar lista de cidades:', error);
-        showToast('Erro ao carregar base de cidades.', 'error');
+    const maxRetries = 3;
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+        try {
+            console.log(`Tentativa de carregar cidades ${attempt + 1}/${maxRetries}...`);
+            const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios');
+            if (!response.ok) throw new Error('IBGE API Error');
+
+            const data = await response.json();
+            state.allCities = data.map(city => ({
+                name: city.nome,
+                uf: city.microrregiao.mesorregiao.UF.sigla,
+                id: city.id
+            }));
+
+            console.log(`Sucesso: ${state.allCities.length} cidades carregadas.`);
+            showToast(`Base de dados pronta.`, 'success');
+            return; // Success
+        } catch (error) {
+            console.error(`Erro tentativa ${attempt + 1}:`, error);
+            attempt++;
+            await new Promise(r => setTimeout(r, 1000)); // Wait 1s before retry
+        }
     }
+
+    // If all retries fail, use fallback
+    console.error('Todas as tentativas falharam. Usando fallback.');
+    useFallbackCities();
+}
+
+function useFallbackCities() {
+    const fallbackCities = [
+        { name: "São Paulo", uf: "SP", id: 3550308 },
+        { name: "Rio de Janeiro", uf: "RJ", id: 3304557 },
+        { name: "Brasília", uf: "DF", id: 5300108 },
+        { name: "Salvador", uf: "BA", id: 2927408 },
+        { name: "Fortaleza", uf: "CE", id: 2304400 },
+        { name: "Belo Horizonte", uf: "MG", id: 3106200 },
+        { name: "Manaus", uf: "AM", id: 1302603 },
+        { name: "Curitiba", uf: "PR", id: 4106902 },
+        { name: "Recife", uf: "PE", id: 2611606 },
+        { name: "Goiânia", uf: "GO", id: 5208707 },
+        { name: "Belém", uf: "PA", id: 1501402 },
+        { name: "Porto Alegre", uf: "RS", id: 4314902 },
+        { name: "Guarulhos", uf: "SP", id: 3518800 },
+        { name: "Campinas", uf: "SP", id: 3509502 },
+        { name: "São Luís", uf: "MA", id: 2111300 },
+        { name: "São Gonçalo", uf: "RJ", id: 3304904 },
+        { name: "Maceió", uf: "AL", id: 2704302 },
+        { name: "Duque de Caxias", uf: "RJ", id: 3301702 },
+        { name: "Campo Grande", uf: "MS", id: 5002704 },
+        { name: "Natal", uf: "RN", id: 2408102 },
+        { name: "Teresina", uf: "PI", id: 2211001 },
+        { name: "São Bernardo do Campo", uf: "SP", id: 3548708 },
+        { name: "João Pessoa", uf: "PB", id: 2507507 },
+        { name: "Nova Iguaçu", uf: "RJ", id: 3303500 },
+        { name: "Santo André", uf: "SP", id: 3547809 },
+        { name: "Osasco", uf: "SP", id: 3534401 },
+        { name: "São José dos Campos", uf: "SP", id: 3549904 },
+        { name: "Jaboatão dos Guararapes", uf: "PE", id: 2607901 },
+        { name: "Ribeirão Preto", uf: "SP", id: 3543402 },
+        { name: "Uberlândia", uf: "MG", id: 3170206 },
+        { name: "Sorocaba", uf: "SP", id: 3552205 },
+        { name: "Contagem", uf: "MG", id: 3118601 },
+        { name: "Aracaju", uf: "SE", id: 2800308 },
+        { name: "Feira de Santana", uf: "BA", id: 2910800 },
+        { name: "Cuiabá", uf: "MT", id: 5103403 },
+        { name: "Joinville", uf: "SC", id: 4209102 },
+        { name: "Florianópolis", uf: "SC", id: 4205407 },
+        { name: "Londrina", uf: "PR", id: 4113700 },
+        { name: "Juiz de Fora", uf: "MG", id: 3136702 },
+        { name: "Niterói", uf: "RJ", id: 3303302 }
+    ];
+
+    state.allCities = fallbackCities;
+    showToast('Modo Offline: Carregadas principais cidades.', 'warning');
 }
 
 // --- Tutorial ---
@@ -249,28 +299,61 @@ function closeTutorial() {
     localStorage.setItem('dealerCheckTutorialV2', 'true');
 }
 
-// --- Search Logic ---
+// --- Search Logic (Autocomplete) ---
+function handleSearchInput(e) {
+    const val = this.value;
+    const list = document.getElementById('autocomplete-list');
+    list.innerHTML = '';
+
+    if (!val || val.length < 2) {
+        list.classList.add('hidden');
+        return;
+    }
+
+    // Check if it's a CEP (digits only)
+    if (/^\d+$/.test(val)) {
+        list.classList.add('hidden');
+        return; // Let the button handle CEP search
+    }
+
+    const normalizedQuery = val.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    // Filter cities (limit to 10 suggestions for performance)
+    const matches = state.allCities.filter(city => {
+        const normalizedCity = city.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return normalizedCity.startsWith(normalizedQuery);
+    }).slice(0, 8);
+
+    if (matches.length > 0) {
+        list.classList.remove('hidden');
+        matches.forEach(city => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.innerHTML = `<strong>${city.name.substr(0, val.length)}</strong>${city.name.substr(val.length)} - ${city.uf}`;
+            item.addEventListener('click', () => {
+                elements.inputs.search.value = `${city.name} - ${city.uf}`; // Fill input
+                list.classList.add('hidden');
+                processLocationSelection(city.name, city.uf, city.id); // Trigger search
+            });
+            list.appendChild(item);
+        });
+    } else {
+        list.classList.add('hidden');
+    }
+}
+
 async function handleSearch() {
     const query = elements.inputs.search.value.trim();
     if (!query) return;
 
-    elements.buttons.search.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-    elements.buttons.search.disabled = true;
-    elements.containers.result.classList.add('hidden');
-
-    try {
-        const cleanQuery = query.replace(/\D/g, '');
-        if (cleanQuery.length === 8) {
-            await searchByCep(cleanQuery);
-        } else {
-            searchByName(query);
-        }
-    } catch (error) {
-        console.error(error);
-        showToast('Erro na busca.', 'error');
-    } finally {
-        elements.buttons.search.innerHTML = '<i class="fa-solid fa-search"></i>';
-        elements.buttons.search.disabled = false;
+    const cleanQuery = query.replace(/\D/g, '');
+    if (cleanQuery.length === 8) {
+        await searchByCep(cleanQuery);
+    } else {
+        // Fallback for manual enter without selecting from list
+        const parts = query.split('-');
+        const namePart = parts[0].trim();
+        searchByName(namePart);
     }
 }
 
@@ -311,27 +394,10 @@ function searchByName(name) {
     if (matches.length === 1) {
         processLocationSelection(matches[0].name, matches[0].uf, matches[0].id);
     } else {
-        showCitySelectionModal(matches);
+        // If multiple matches but user pressed enter, pick first
+        processLocationSelection(matches[0].name, matches[0].uf, matches[0].id);
     }
 }
-
-function showCitySelectionModal(cities) {
-    const container = elements.containers.result;
-    container.classList.remove('hidden');
-
-    let html = `<div class="glass-card"><h3 style="margin-bottom:1rem;">Selecione a Cidade:</h3><ul class="city-list">`;
-    cities.forEach(city => {
-        html += `<li onclick="selectCity('${city.name}', '${city.uf}', '${city.id}')" class="city-option">
-            ${city.name} - ${city.uf}
-        </li>`;
-    });
-    html += `</ul></div>`;
-    container.innerHTML = html;
-}
-
-window.selectCity = async function (name, uf, id) {
-    await processLocationSelection(name, uf, id);
-};
 
 async function processLocationSelection(city, uf, ibgeId) {
     const population = await getCityPopulation(ibgeId);
@@ -343,7 +409,7 @@ async function processLocationSelection(city, uf, ibgeId) {
         const key = `br-${uf.toLowerCase()}`;
         const point = state.mapChart.series[0].points.find(p => p['hc-key'] === key);
         if (point) {
-            point.zoomTo();
+            // point.zoomTo(); // Disabled zoom
             point.select(true, false);
         }
     }
@@ -539,6 +605,16 @@ function setupEventListeners() {
     elements.buttons.search.addEventListener('click', handleSearch);
     elements.inputs.search.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleSearch();
+    });
+
+    // Autocomplete Listeners
+    elements.inputs.search.addEventListener('input', handleSearchInput);
+
+    document.addEventListener('click', (e) => {
+        if (e.target !== elements.inputs.search) {
+            const list = document.getElementById('autocomplete-list');
+            if (list) list.classList.add('hidden');
+        }
     });
 
     elements.buttons.adminToggle.addEventListener('click', () => {
