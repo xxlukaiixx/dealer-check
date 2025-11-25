@@ -40,8 +40,7 @@ const elements = {
         loginPanel: document.getElementById('login-panel'),
         adminPanel: document.getElementById('admin-panel'),
         occupiedList: document.getElementById('occupied-list'),
-        tutorialModal: document.getElementById('tutorial-modal'),
-        searchResults: document.getElementById('search-results-dropdown') // New dropdown for name search
+        tutorialModal: document.getElementById('tutorial-modal')
     }
 };
 
@@ -57,7 +56,6 @@ async function init() {
 
 // --- Map Logic ---
 function initMap() {
-    // Aggregate data by UF
     const data = getMapData();
 
     state.mapChart = Highcharts.mapChart('map-container', {
@@ -113,21 +111,15 @@ function initMap() {
 }
 
 function getMapData() {
-    // Map UF to Highcharts keys (br-sp, br-rj, etc.)
-    // Highcharts uses 'hc-key' like 'br-sp'
     const counts = {};
-
     state.config.occupiedCities.forEach(item => {
         const uf = item.uf.toLowerCase();
         const key = `br-${uf}`;
         const dealers = parseInt(item.dealers) || 0;
-
         if (!counts[key]) counts[key] = 0;
         counts[key] += dealers;
     });
 
-    // Convert to array format for Highcharts
-    // We need to match against all BR states to ensure they appear even with 0
     const allKeys = [
         'br-ac', 'br-al', 'br-ap', 'br-am', 'br-ba', 'br-ce', 'br-df', 'br-es', 'br-go', 'br-ma',
         'br-mt', 'br-ms', 'br-mg', 'br-pa', 'br-pb', 'br-pr', 'br-pe', 'br-pi', 'br-rj', 'br-rn',
@@ -150,7 +142,6 @@ function updateMapData() {
 // --- Data Loading ---
 async function loadAllCities() {
     try {
-        // Fetch all municipalities from IBGE (lightweight JSON)
         const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios');
         const data = await response.json();
         state.allCities = data.map(city => ({
@@ -188,12 +179,10 @@ async function handleSearch() {
     elements.containers.result.classList.add('hidden');
 
     try {
-        // Check if query is CEP (digits only, length 8)
         const cleanQuery = query.replace(/\D/g, '');
         if (cleanQuery.length === 8) {
             await searchByCep(cleanQuery);
         } else {
-            // Search by Name
             searchByName(query);
         }
     } catch (error) {
@@ -222,13 +211,12 @@ async function searchByCep(cep) {
 }
 
 function searchByName(name) {
-    // Filter cities client-side
     const normalizedQuery = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
     const matches = state.allCities.filter(city => {
         const normalizedCity = city.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         return normalizedCity.includes(normalizedQuery);
-    }).slice(0, 10); // Limit to 10 results
+    }).slice(0, 10);
 
     if (matches.length === 0) {
         showToast('Cidade não encontrada.', 'warning');
@@ -236,18 +224,13 @@ function searchByName(name) {
     }
 
     if (matches.length === 1) {
-        // Exact match or only one result
         processLocationSelection(matches[0].name, matches[0].uf, matches[0].id);
     } else {
-        // Show dropdown (simplified as a prompt/toast for now, or implement UI)
-        // For V2 MVP, let's pick the first one or ask user to be specific
-        // Better: Create a simple list in the UI
         showCitySelectionModal(matches);
     }
 }
 
 function showCitySelectionModal(cities) {
-    // Quick implementation: Use the result container to show list
     const container = elements.containers.result;
     container.classList.remove('hidden');
 
@@ -266,21 +249,17 @@ window.selectCity = async function (name, uf, id) {
 };
 
 async function processLocationSelection(city, uf, ibgeId) {
-    // 1. Get Population
     const population = await getCityPopulation(ibgeId);
-
     state.selectedLocation = { city, uf, ibgeId, population };
-
-    // 2. Check Availability
     checkAvailability();
 
-    // 3. Update Map Highlight
+    // Map Highlight
     if (state.mapChart) {
         const key = `br-${uf.toLowerCase()}`;
         const point = state.mapChart.series[0].points.find(p => p['hc-key'] === key);
         if (point) {
             point.zoomTo();
-            point.select(true, false); // Select, don't accumulate
+            point.select(true, false);
         }
     }
 }
@@ -302,15 +281,87 @@ async function getCityPopulation(ibgeId) {
 function checkAvailability() {
     const { city, uf, population } = state.selectedLocation;
 
-    // 1. Find Occupied Dealers (from Admin Config)
     const occupiedData = state.config.occupiedCities.find(
         item => item.city === city && item.uf === uf
     );
 
     const currentDealers = occupiedData ? parseInt(occupiedData.dealers) : 0;
-
-    // 2. Calculate Max Dealers
     const maxDealers = Math.floor(population / state.config.densityRule);
+    const isAvailable = currentDealers < maxDealers;
+
+    showResult(isAvailable, city, uf, population, currentDealers, maxDealers);
+}
+
+// --- UI Functions ---
+function showResult(isAvailable, city, uf, population, currentDealers, maxDealers) {
+    const container = elements.containers.result;
+    container.classList.remove('hidden');
+
+    let html = '';
+    const popFormatted = population.toLocaleString('pt-BR');
+
+    if (isAvailable) {
+        html = `
+            <div class="glass-card result-card status-available-card">
+                <div class="status-icon"><i class="fa-solid fa-check"></i></div>
+                <h2 class="result-title">DISPONÍVEL</h2>
+                <p class="result-city">${city} - ${uf}</p>
+                <p class="result-pop"><i class="fa-solid fa-users"></i> População: ${popFormatted}</p>
+                <div id="saturation-gauge" style="height: 200px; margin: 1rem 0;"></div>
+                <p class="result-desc">Esta praça está aberta para novos parceiros.</p>
+                <a href="#" class="cta-btn-result">Quero ser um Revendedor</a>
+            </div>
+        `;
+    } else {
+        html = `
+            <div class="glass-card result-card status-unavailable-card">
+                <div class="status-icon"><i class="fa-solid fa-xmark"></i></div>
+                <h2 class="result-title">INDISPONÍVEL</h2>
+                <p class="result-city">${city} - ${uf}</p>
+                <p class="result-pop"><i class="fa-solid fa-users"></i> População: ${popFormatted}</p>
+                <div id="saturation-gauge" style="height: 200px; margin: 1rem 0;"></div>
+                <p class="result-desc">Esta praça já atingiu o limite de parceiros.</p>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+    renderGaugeChart(currentDealers, maxDealers);
+}
+
+function renderGaugeChart(current, max) {
+    Highcharts.chart('saturation-gauge', {
+        chart: { type: 'solidgauge', backgroundColor: 'transparent' },
+        title: { text: 'Saturação da Praça', style: { color: '#fff', fontSize: '14px' } },
+        pane: {
+            center: ['50%', '85%'],
+            size: '100%',
+            startAngle: -90,
+            endAngle: 90,
+            background: { backgroundColor: '#333', innerRadius: '60%', outerRadius: '100%', shape: 'arc' }
+        },
+        yAxis: {
+            min: 0,
+            max: max,
+            stops: [[0.1, '#55BF3B'], [0.5, '#DDDF0D'], [0.9, '#DF5353']],
+            lineWidth: 0,
+            tickWidth: 0,
+            minorTickInterval: null,
+            tickAmount: 2,
+            title: { y: -70 },
+            labels: { y: 16, style: { color: '#fff' } }
+        },
+        plotOptions: { solidgauge: { dataLabels: { y: 5, borderWidth: 0, useHTML: true } } },
+        series: [{
+            name: 'Revendedores',
+            data: [current],
+            dataLabels: {
+                format: '<div style="text-align:center"><span style="font-size:25px;color:#fff">{y}</span><br/>' +
+                    '<span style="font-size:12px;color:#888">de ' + max + '</span></div>'
+            }
+        }],
+        credits: { enabled: false }
+    });
 }
 
 function showToast(message, type = 'info') {
@@ -345,7 +396,31 @@ function loadConfig() {
 function saveConfig() {
     localStorage.setItem('dealerCheckConfigV2', JSON.stringify(state.config));
     showToast('Configurações salvas!', 'success');
-    updateMapData(); // Refresh map
+    updateMapData();
+    renderAdminChart();
+}
+
+function renderAdminChart() {
+    const counts = {};
+    state.config.occupiedCities.forEach(item => {
+        if (!counts[item.uf]) counts[item.uf] = 0;
+        counts[item.uf] += parseInt(item.dealers);
+    });
+
+    const chartData = Object.keys(counts).map(uf => ({ name: uf, y: counts[uf] }));
+
+    Highcharts.chart('admin-chart-container', {
+        chart: { type: 'pie', backgroundColor: 'transparent' },
+        title: { text: '' },
+        plotOptions: {
+            pie: {
+                innerSize: '50%',
+                dataLabels: { enabled: true, format: '<b>{point.name}</b>: {point.y}', style: { color: '#ccc' } }
+            }
+        },
+        series: [{ name: 'Revendedores', data: chartData }],
+        credits: { enabled: false }
+    });
 }
 
 function renderOccupiedList() {
@@ -374,33 +449,32 @@ window.removeOccupied = function (index) {
 
 // --- Event Listeners ---
 function setupEventListeners() {
-    // Tutorial
     elements.buttons.closeTutorial.addEventListener('click', closeTutorial);
 
-    // Search
     elements.buttons.search.addEventListener('click', handleSearch);
     elements.inputs.search.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleSearch();
     });
 
-    // Admin Toggle
     elements.buttons.adminToggle.addEventListener('click', () => {
         state.currentView = state.currentView === 'user' ? 'admin' : 'user';
         toggleView();
+        if (state.currentView === 'admin' && state.isAdmin) {
+            setTimeout(renderAdminChart, 300);
+        }
     });
 
-    // Login
     elements.buttons.login.addEventListener('click', () => {
         if (elements.inputs.adminPass.value === 'admin123') {
             state.isAdmin = true;
             elements.containers.loginPanel.classList.add('hidden');
             elements.containers.adminPanel.classList.remove('hidden');
+            renderAdminChart();
         } else {
             showToast('Senha incorreta', 'error');
         }
     });
 
-    // Logout
     elements.buttons.logout.addEventListener('click', () => {
         state.isAdmin = false;
         elements.containers.loginPanel.classList.remove('hidden');
@@ -408,31 +482,25 @@ function setupEventListeners() {
         elements.inputs.adminPass.value = '';
     });
 
-    // Save Density
     elements.buttons.saveDensity.addEventListener('click', () => {
         state.config.densityRule = parseInt(elements.inputs.density.value);
         saveConfig();
     });
 
-    // Add Occupied City
     elements.buttons.addOccupied.addEventListener('click', () => {
         const city = elements.inputs.occupiedCity.value;
         const uf = elements.inputs.occupiedUf.value;
         const dealers = elements.inputs.occupiedDealers.value;
 
         if (city && uf && dealers) {
-            // Check if exists, update if so
             const existingIndex = state.config.occupiedCities.findIndex(i => i.city === city && i.uf === uf);
             if (existingIndex >= 0) {
                 state.config.occupiedCities[existingIndex].dealers = dealers;
             } else {
                 state.config.occupiedCities.push({ city, uf, dealers });
             }
-
             saveConfig();
             renderOccupiedList();
-
-            // Clear
             elements.inputs.occupiedCity.value = '';
             elements.inputs.occupiedUf.value = '';
             elements.inputs.occupiedDealers.value = '';
