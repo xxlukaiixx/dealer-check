@@ -46,16 +46,27 @@ const elements = {
 
 // --- Initialization ---
 async function init() {
+    // Setup listeners FIRST to ensure UI is responsive immediately
+    setupEventListeners();
+
     loadConfig();
     checkTutorial();
     populateUfSelect();
-    setupEventListeners();
-    initMap(); // Initialize Map
-    await loadAllCities(); // Pre-load cities for name search
+
+    // Load Data
+    loadAllCities();
+
+    // Init Map
+    initMap();
 }
 
 // --- Map Logic ---
 function initMap() {
+    if (typeof Highcharts === 'undefined') {
+        console.error('Highcharts not loaded');
+        return;
+    }
+
     const data = getMapData();
 
     state.mapChart = Highcharts.mapChart('map-container', {
@@ -205,58 +216,42 @@ function updateMapData() {
     }
 }
 
-// --- Data Loading with Local Fallback ---
-async function loadAllCities() {
-    // 1. Try Local JSON (Most Reliable)
-    try {
-        console.log("Tentando carregar base local (cities.json)...");
-        const response = await fetch('cities.json');
-        if (!response.ok) throw new Error('Local JSON not found');
-
-        const data = await response.json();
-        state.allCities = data.map(city => ({
-            name: city.nome,
-            uf: city.microrregiao.mesorregiao.UF.sigla,
-            id: city.id
-        }));
-
-        console.log(`Sucesso Local: ${state.allCities.length} cidades carregadas.`);
-        showToast(`Base de dados completa carregada.`, 'success');
-        return;
-    } catch (localError) {
-        console.warn('Erro ao carregar local, tentando API...', localError);
+// --- Data Loading (Global Variable Strategy) ---
+function loadAllCities() {
+    // Check if CITIES_DATA is available (loaded from cities-data.js)
+    if (window.CITIES_DATA && Array.isArray(window.CITIES_DATA)) {
+        console.log("Carregando cidades de window.CITIES_DATA...");
+        try {
+            state.allCities = window.CITIES_DATA.map(city => ({
+                name: city.nome,
+                uf: city.microrregiao.mesorregiao.UF.sigla,
+                id: city.id
+            }));
+            console.log(`Sucesso: ${state.allCities.length} cidades carregadas.`);
+            showToast(`Base de dados carregada (${state.allCities.length} cidades).`, 'success');
+            return;
+        } catch (e) {
+            console.error("Erro ao processar CITIES_DATA", e);
+        }
+    } else {
+        console.warn("CITIES_DATA não encontrado. Tentando fetch como fallback...");
     }
 
-    // 2. Try API (Backup)
-    const maxRetries = 3;
-    let attempt = 0;
-
-    while (attempt < maxRetries) {
-        try {
-            console.log(`Tentativa API ${attempt + 1}/${maxRetries}...`);
-            const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios');
-            if (!response.ok) throw new Error('IBGE API Error');
-
-            const data = await response.json();
+    // Fallback to fetch if global var missing (unlikely if script tag is there)
+    fetch('cities.json')
+        .then(response => response.json())
+        .then(data => {
             state.allCities = data.map(city => ({
                 name: city.nome,
                 uf: city.microrregiao.mesorregiao.UF.sigla,
                 id: city.id
             }));
-
-            console.log(`Sucesso API: ${state.allCities.length} cidades carregadas.`);
-            showToast(`Base de dados carregada via API.`, 'success');
-            return;
-        } catch (error) {
-            console.error(`Erro API tentativa ${attempt + 1}:`, error);
-            attempt++;
-            await new Promise(r => setTimeout(r, 1000));
-        }
-    }
-
-    // 3. Hardcoded Fallback (Last Resort)
-    console.error('Todas as tentativas falharam. Usando fallback crítico.');
-    useFallbackCities();
+            showToast(`Base de dados carregada via JSON.`, 'success');
+        })
+        .catch(err => {
+            console.error("Erro fatal no carregamento de cidades:", err);
+            useFallbackCities();
+        });
 }
 
 function useFallbackCities() {
@@ -272,35 +267,7 @@ function useFallbackCities() {
         { name: "Recife", uf: "PE", id: 2611606 },
         { name: "Goiânia", uf: "GO", id: 5208707 },
         { name: "Belém", uf: "PA", id: 1501402 },
-        { name: "Porto Alegre", uf: "RS", id: 4314902 },
-        { name: "Guarulhos", uf: "SP", id: 3518800 },
-        { name: "Campinas", uf: "SP", id: 3509502 },
-        { name: "São Luís", uf: "MA", id: 2111300 },
-        { name: "São Gonçalo", uf: "RJ", id: 3304904 },
-        { name: "Maceió", uf: "AL", id: 2704302 },
-        { name: "Duque de Caxias", uf: "RJ", id: 3301702 },
-        { name: "Campo Grande", uf: "MS", id: 5002704 },
-        { name: "Natal", uf: "RN", id: 2408102 },
-        { name: "Teresina", uf: "PI", id: 2211001 },
-        { name: "São Bernardo do Campo", uf: "SP", id: 3548708 },
-        { name: "João Pessoa", uf: "PB", id: 2507507 },
-        { name: "Nova Iguaçu", uf: "RJ", id: 3303500 },
-        { name: "Santo André", uf: "SP", id: 3547809 },
-        { name: "Osasco", uf: "SP", id: 3534401 },
-        { name: "São José dos Campos", uf: "SP", id: 3549904 },
-        { name: "Jaboatão dos Guararapes", uf: "PE", id: 2607901 },
-        { name: "Ribeirão Preto", uf: "SP", id: 3543402 },
-        { name: "Uberlândia", uf: "MG", id: 3170206 },
-        { name: "Sorocaba", uf: "SP", id: 3552205 },
-        { name: "Contagem", uf: "MG", id: 3118601 },
-        { name: "Aracaju", uf: "SE", id: 2800308 },
-        { name: "Feira de Santana", uf: "BA", id: 2910800 },
-        { name: "Cuiabá", uf: "MT", id: 5103403 },
-        { name: "Joinville", uf: "SC", id: 4209102 },
-        { name: "Florianópolis", uf: "SC", id: 4205407 },
-        { name: "Londrina", uf: "PR", id: 4113700 },
-        { name: "Juiz de Fora", uf: "MG", id: 3136702 },
-        { name: "Niterói", uf: "RJ", id: 3303302 }
+        { name: "Porto Alegre", uf: "RS", id: 4314902 }
     ];
 
     state.allCities = fallbackCities;
@@ -316,6 +283,7 @@ function checkTutorial() {
 }
 
 function closeTutorial() {
+    console.log("Fechando tutorial...");
     elements.containers.tutorialModal.classList.add('hidden');
     localStorage.setItem('dealerCheckTutorialV2', 'true');
 }
@@ -621,7 +589,11 @@ window.removeOccupied = function (index) {
 
 // --- Event Listeners ---
 function setupEventListeners() {
-    elements.buttons.closeTutorial.addEventListener('click', closeTutorial);
+    if (elements.buttons.closeTutorial) {
+        elements.buttons.closeTutorial.addEventListener('click', closeTutorial);
+    } else {
+        console.error("Botão de fechar tutorial não encontrado!");
+    }
 
     elements.buttons.search.addEventListener('click', handleSearch);
     elements.inputs.search.addEventListener('keypress', (e) => {
