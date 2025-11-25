@@ -64,50 +64,129 @@ function initMap() {
             backgroundColor: 'transparent',
             style: {
                 fontFamily: 'Montserrat'
-            }
+            },
+            margin: 0
         },
-        title: {
-            text: '',
-            style: { color: '#fff' }
-        },
+        title: { text: '' },
         mapNavigation: {
             enabled: true,
             buttonOptions: {
-                verticalAlign: 'bottom'
+                verticalAlign: 'bottom',
+                align: 'right'
             }
         },
         colorAxis: {
             min: 0,
-            minColor: '#333',
-            maxColor: '#fff',
-            labels: {
-                style: { color: '#888' }
+            minColor: '#1a2a3a', // Dark Blue
+            maxColor: '#00a8ff', // Bright Blue (EAG Style)
+            stops: [
+                [0, '#1a2a3a'],
+                [0.5, '#0077cc'],
+                [1, '#00a8ff']
+            ],
+            labels: { style: { color: '#888' } }
+        },
+        plotOptions: {
+            map: {
+                allAreas: true,
+                borderColor: '#004466',
+                borderWidth: 1,
+                states: {
+                    hover: {
+                        color: '#4dc3ff',
+                        borderColor: '#fff'
+                    }
+                },
+                shadow: {
+                    color: 'rgba(0,0,0,0.5)',
+                    offsetX: 2,
+                    offsetY: 2,
+                    opacity: 1,
+                    width: 5
+                }
             }
         },
         series: [{
             data: data,
-            name: 'Revendedores',
-            states: {
-                hover: {
-                    color: '#fff'
-                }
-            },
+            name: 'Revendedores por Estado',
             dataLabels: {
                 enabled: true,
                 format: '{point.name}',
                 style: {
-                    color: '#ccc',
+                    color: '#cceeff',
                     textOutline: 'none',
-                    fontWeight: 'normal'
+                    fontWeight: 'normal',
+                    fontSize: '10px'
                 }
             },
             tooltip: {
-                pointFormat: '{point.name}: {point.value} Revendedores'
+                pointFormat: '{point.name}: {point.value} Revendedores',
+                headerFormat: ''
+            }
+        }, {
+            // City Markers Series (Bubbles)
+            type: 'mappoint',
+            name: 'Cidades em Destaque',
+            color: '#ffffff',
+            data: [], // Populated dynamically
+            marker: {
+                lineWidth: 2,
+                lineColor: '#00a8ff',
+                fillColor: 'rgba(255,255,255,0.9)',
+                symbol: 'circle',
+                radius: 5
             },
-            borderColor: '#333',
-            borderWidth: 1
+            dataLabels: {
+                enabled: false
+            },
+            tooltip: {
+                pointFormat: '<b>{point.name}</b><br>{point.dealers} Revendedores'
+            }
         }]
     });
+
+    // Initial load of city markers
+    updateMapMarkers();
+}
+
+async function updateMapMarkers() {
+    if (!state.mapChart) return;
+
+    const markers = [];
+
+    // Process each occupied city to find coordinates
+    // Note: In a real prod app, we should cache these coords to avoid API rate limits
+    for (const item of state.config.occupiedCities) {
+        try {
+            // Simple cache check (in-memory for session)
+            if (!item.lat || !item.lon) {
+                const query = `${item.city}, ${item.uf}, Brazil`;
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    item.lat = parseFloat(data[0].lat);
+                    item.lon = parseFloat(data[0].lon);
+                }
+            }
+
+            if (item.lat && item.lon) {
+                markers.push({
+                    name: item.city,
+                    lat: item.lat,
+                    lon: item.lon,
+                    dealers: parseInt(item.dealers),
+                    z: parseInt(item.dealers) // For bubble size if we switch type
+                });
+            }
+        } catch (e) {
+            console.error(`Erro ao buscar coords para ${item.city}`, e);
+        }
+    }
+
+    // Update the second series (index 1)
+    if (state.mapChart.series[1]) {
+        state.mapChart.series[1].setData(markers);
+    }
 }
 
 function getMapData() {
@@ -136,6 +215,7 @@ function updateMapData() {
     if (state.mapChart) {
         const newData = getMapData();
         state.mapChart.series[0].setData(newData);
+        updateMapMarkers(); // Also update markers
     }
 }
 
@@ -211,6 +291,11 @@ async function searchByCep(cep) {
 }
 
 function searchByName(name) {
+    if (!state.allCities || state.allCities.length === 0) {
+        showToast('Aguarde, carregando cidades...', 'warning');
+        return;
+    }
+
     const normalizedQuery = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
     const matches = state.allCities.filter(city => {
@@ -309,7 +394,7 @@ function showResult(isAvailable, city, uf, population, currentDealers, maxDealer
                 <p class="result-pop"><i class="fa-solid fa-users"></i> População: ${popFormatted}</p>
                 <div id="saturation-gauge" style="height: 200px; margin: 1rem 0;"></div>
                 <p class="result-desc">Esta praça está aberta para novos parceiros.</p>
-                <a href="#" class="cta-btn-result">Quero ser um Revendedor</a>
+                <!-- Button removed as per request -->
             </div>
         `;
     } else {
