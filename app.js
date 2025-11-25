@@ -205,14 +205,35 @@ function updateMapData() {
     }
 }
 
-// --- Data Loading with Retry ---
+// --- Data Loading with Local Fallback ---
 async function loadAllCities() {
+    // 1. Try Local JSON (Most Reliable)
+    try {
+        console.log("Tentando carregar base local (cities.json)...");
+        const response = await fetch('cities.json');
+        if (!response.ok) throw new Error('Local JSON not found');
+
+        const data = await response.json();
+        state.allCities = data.map(city => ({
+            name: city.nome,
+            uf: city.microrregiao.mesorregiao.UF.sigla,
+            id: city.id
+        }));
+
+        console.log(`Sucesso Local: ${state.allCities.length} cidades carregadas.`);
+        showToast(`Base de dados completa carregada.`, 'success');
+        return;
+    } catch (localError) {
+        console.warn('Erro ao carregar local, tentando API...', localError);
+    }
+
+    // 2. Try API (Backup)
     const maxRetries = 3;
     let attempt = 0;
 
     while (attempt < maxRetries) {
         try {
-            console.log(`Tentativa de carregar cidades ${attempt + 1}/${maxRetries}...`);
+            console.log(`Tentativa API ${attempt + 1}/${maxRetries}...`);
             const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios');
             if (!response.ok) throw new Error('IBGE API Error');
 
@@ -223,18 +244,18 @@ async function loadAllCities() {
                 id: city.id
             }));
 
-            console.log(`Sucesso: ${state.allCities.length} cidades carregadas.`);
-            showToast(`Base de dados pronta.`, 'success');
-            return; // Success
+            console.log(`Sucesso API: ${state.allCities.length} cidades carregadas.`);
+            showToast(`Base de dados carregada via API.`, 'success');
+            return;
         } catch (error) {
-            console.error(`Erro tentativa ${attempt + 1}:`, error);
+            console.error(`Erro API tentativa ${attempt + 1}:`, error);
             attempt++;
-            await new Promise(r => setTimeout(r, 1000)); // Wait 1s before retry
+            await new Promise(r => setTimeout(r, 1000));
         }
     }
 
-    // If all retries fail, use fallback
-    console.error('Todas as tentativas falharam. Usando fallback.');
+    // 3. Hardcoded Fallback (Last Resort)
+    console.error('Todas as tentativas falharam. Usando fallback crítico.');
     useFallbackCities();
 }
 
